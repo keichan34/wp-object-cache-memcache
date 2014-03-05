@@ -3,7 +3,7 @@
 /*
 Plugin Name: Memcached
 Description: Memcached backend for the WP Object Cache.
-Version: 2.0.2
+Version: 3.0.0
 Plugin URI: http://wordpress.org/extend/plugins/memcached/
 Author: Ryan Boren, Denis de Bernardy, Matt Martz
 
@@ -51,10 +51,10 @@ function wp_cache_flush() {
 	return $wp_object_cache->flush();
 }
 
-function wp_cache_get($key, $group = '', $force = false) {
+function wp_cache_get($key, $group = '', $force = false, &$found = null) {
 	global $wp_object_cache;
 
-	return $wp_object_cache->get($key, $group, $force);
+	return $wp_object_cache->get($key, $group, $force, $found);
 }
 
 function wp_cache_init() {
@@ -148,7 +148,7 @@ class WP_Object_Cache {
 	function incr($id, $n = 1, $group = 'default' ) {
 		$key = $this->key($id, $group);
 		$mc =& $this->get_mc($group);
-		$this->cache[ $key ] = $mc->increment( $key, $n );	
+		$this->cache[ $key ] = $mc->increment( $key, $n );
 		return $this->cache[ $key ];
 	}
 
@@ -183,7 +183,7 @@ class WP_Object_Cache {
 		if ( false !== $result )
 			unset($this->cache[$key]);
 
-		return $result; 
+		return $result;
 	}
 
 	function flush() {
@@ -197,21 +197,27 @@ class WP_Object_Cache {
 		return $ret;
 	}
 
-	function get($id, $group = 'default', $force = false) {
+	function get($id, $group = 'default', $force = false, &$found = null) {
 		$key = $this->key($id, $group);
 		$mc =& $this->get_mc($group);
 
+		$found = false;
+
 		if ( isset($this->cache[$key]) && ( !$force || in_array($group, $this->no_mc_groups) ) ) {
 			if ( is_object( $this->cache[$key] ) )
- 				$value = clone $this->cache[$key];
+				$value = clone $this->cache[$key];
 			else
 				$value = $this->cache[$key];
+
+			$found = true;
 		} else if ( in_array($group, $this->no_mc_groups) ) {
 			$this->cache[$key] = $value = false;
+			$found = false;
 		} else {
 			$value = $mc->get($key);
-	                if ( NULL === $value )
-                        	$value = false;
+			if ( NULL === $value ) {
+				$value = false;
+			}
 			$this->cache[$key] = $value;
 		}
 
@@ -220,6 +226,7 @@ class WP_Object_Cache {
 
 		if ( 'checkthedatabaseplease' === $value ) {
 			unset( $this->cache[$key] );
+			$found = false;
 			$value = false;
 		}
 
@@ -259,7 +266,7 @@ class WP_Object_Cache {
 		return $return;
 	}
 
-	function key($key, $group) {	
+	function key($key, $group) {
 		if ( empty($group) )
 			$group = 'default';
 
@@ -328,15 +335,15 @@ class WP_Object_Cache {
 		echo "</p>\n";
 		echo "<h3>Memcached:</h3>";
 		foreach ( $this->group_ops as $group => $ops ) {
-			if ( !isset($_GET['debug_queries']) && 500 < count($ops) ) { 
-				$ops = array_slice( $ops, 0, 500 ); 
+			if ( !isset($_GET['debug_queries']) && 500 < count($ops) ) {
+				$ops = array_slice( $ops, 0, 500 );
 				echo "<big>Too many to show! <a href='" . add_query_arg( 'debug_queries', 'true' ) . "'>Show them anyway</a>.</big>\n";
-			} 
+			}
 			echo "<h4>$group commands</h4>";
 			echo "<pre>\n";
 			$lines = array();
 			foreach ( $ops as $op ) {
-				$lines[] = $this->colorize_debug_line($op); 
+				$lines[] = $this->colorize_debug_line($op);
 			}
 			print_r($lines);
 			echo "</pre>\n";
