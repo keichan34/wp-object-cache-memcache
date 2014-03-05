@@ -108,6 +108,18 @@ class WP_Object_Cache {
 	var $cache_enabled = true;
 	var $default_expiration = 0;
 
+	var $debug = false;
+
+	function __construct() {
+		global $blog_id;
+
+		$this->multisite = is_multisite();
+		$this->blog_prefix =  $this->multisite ? $blog_id . ':' : '';
+
+		if (defined('WP_DEBUG') && WP_DEBUG)
+			$this->debug = true;
+	}
+
 	function add($id, $data, $group = 'default', $expire = 0) {
 		$key = $this->key($id, $group);
 
