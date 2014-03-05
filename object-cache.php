@@ -371,10 +371,15 @@ class WP_Object_Cache {
 	function WP_Object_Cache() {
 		global $memcached_servers;
 
+		$default_port = intval(ini_get('memcache.default_port'));
+		if (!$default_port) {
+			$default_port = 11211;
+		}
+
 		if ( isset($memcached_servers) )
 			$buckets = $memcached_servers;
 		else
-			$buckets = array('127.0.0.1');
+			$buckets = array('127.0.0.1:' . $default_port);
 
 		reset($buckets);
 		if ( is_int( key($buckets) ) )
@@ -384,11 +389,9 @@ class WP_Object_Cache {
 			$this->mc[$bucket] = new Memcache();
 			foreach ( $servers as $server  ) {
 				list ( $node, $port ) = explode(':', $server);
-				if ( !$port )
-					$port = ini_get('memcache.default_port');
 				$port = intval($port);
 				if ( !$port )
-					$port = 11211;
+					$port = $default_port;
 				$this->mc[$bucket]->addServer($node, $port, true, 1, 1, 15, true, array($this, 'failure_callback'));
 				$this->mc[$bucket]->setCompressThreshold(20000, 0.2);
 			}
