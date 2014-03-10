@@ -353,9 +353,6 @@ class WP_Object_Cache {
 			print_r($lines);
 			echo "</pre>\n";
 		}
-
-		if ( $this->debug() )
-			var_dump($this->memcache_debug);
 	}
 
 	function &get_mc($group) {
