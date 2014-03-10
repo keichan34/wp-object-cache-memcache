@@ -108,18 +108,6 @@ class WP_Object_Cache {
 	var $cache_enabled = true;
 	var $default_expiration = 0;
 
-	var $debug = false;
-
-	function __construct() {
-		global $blog_id;
-
-		$this->multisite = is_multisite();
-		$this->blog_prefix =  $this->multisite ? $blog_id . ':' : '';
-
-		if (defined('WP_DEBUG') && WP_DEBUG)
-			$this->debug = true;
-	}
-
 	function add($id, $data, $group = 'default', $expire = 0) {
 		$key = $this->key($id, $group);
 
@@ -366,7 +354,7 @@ class WP_Object_Cache {
 			echo "</pre>\n";
 		}
 
-		if ( $this->debug )
+		if ( $this->debug() )
 			var_dump($this->memcache_debug);
 	}
 
@@ -420,5 +408,8 @@ class WP_Object_Cache {
 		$this->cache_hits =& $this->stats['get'];
 		$this->cache_misses =& $this->stats['add'];
 	}
+
+	private function debug() {
+		return (defined('WP_DEBUG') && WP_DEBUG == true);
+	}
 }
-?>
